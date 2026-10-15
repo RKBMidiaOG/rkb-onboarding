@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Coexistência · RKB Mídia</title>
+<script>
+  // aplica o tema antes de pintar, para não piscar
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('rkb-theme'); } catch (e) {}
+    if (!t) t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<style>
+  :root {
+    color-scheme: light;
+    --bg:#F3F3F5; --card:#FFFFFF; --card2:#F6F6F8;
+    --tx:#0C0D10; --tx2:#5E6068; --tx3:#9A9CA3;
+    --gold:#A67C2E; --green:#1E9E5A; --red:#D9452B; --amber:#B9770E;
+    --line:rgba(12,13,16,.10); --line-strong:rgba(12,13,16,.18);
+    --shadow:0 1px 2px rgba(12,13,16,.04), 0 8px 24px rgba(12,13,16,.05);
+    --shadow-h:0 2px 4px rgba(12,13,16,.05), 0 16px 36px rgba(12,13,16,.10);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg:#050608; --card:#0D0E11; --card2:#15161A;
+    --tx:#F2F3F5; --tx2:#9A9CA4; --tx3:#62646C;
+    --gold:#DDB872; --green:#4FD08D; --red:#F26E55; --amber:#E9B44C;
+    --line:rgba(242,243,245,.09); --line-strong:rgba(242,243,245,.18);
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 8px 24px rgba(0,0,0,.40);
+    --shadow-h:0 2px 4px rgba(0,0,0,.5), 0 16px 36px rgba(0,0,0,.55);
+  }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body {
+    margin:0; min-height:100vh; display:flex; flex-direction:column;
+    background:var(--bg); color:var(--tx);
+    font-family:"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    transition:background .3s ease, color .3s ease;
+  }
+
+  /* ouro metálico: só na marca e no botão principal */
+  @keyframes sheen { 0%{background-position:0% 0} 50%{background-position:100% 0} 100%{background-position:0% 0} }
+  .gold-bg {
+    background:linear-gradient(100deg, #8C6A22 0%, #DDB872 30%, #A67C2E 50%, #F1D9A0 70%, #A67C2E 100%);
+    background-size:220% 100%; animation:sheen 7s ease-in-out infinite;
+  }
+  .gold-text {
+    background:linear-gradient(100deg, #8C6A22 0%, #DDB872 30%, #A67C2E 50%, #F1D9A0 70%, #A67C2E 100%);
+    background-size:220% 100%; animation:sheen 7s ease-in-out infinite;
+    -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent;
+  }
+
+  /* topo */
+  .top { display:flex; align-items:center; justify-content:space-between; padding:20px 24px; }
+  .brand { font-weight:600; font-size:1.35rem; letter-spacing:-.04em; text-decoration:none; }
+  .icon-btn {
+    width:32px; height:32px; border-radius:10px; border:1px solid var(--line); background:var(--card);
+    color:var(--tx2); display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+    font-size:1rem; transition:transform .2s ease, color .2s ease;
+  }
+  .icon-btn:hover { color:var(--tx); transform:translateY(-1px); }
+  .icon-btn:focus-visible, .btn:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+
+  main { flex:1; width:100%; max-width:880px; margin:0 auto; padding:24px 20px 40px; }
+
+  /* saudação */
+  .hero { position:relative; padding:28px 0 32px; }
+  .silk { position:absolute; left:0; top:-6px; width:100%; height:150px; pointer-events:none; opacity:.5; z-index:0; }
+  .silk path { animation:drift 12s ease-in-out infinite alternate; }
+  @keyframes drift { from{transform:translateY(-4px)} to{transform:translateY(6px)} }
+  h1 { position:relative; z-index:1; margin:0 0 12px; font-weight:600; font-size:clamp(1.9rem, 4.6vw, 2.7rem); line-height:1.08; letter-spacing:-.035em; }
+  .sub { position:relative; z-index:1; margin:0; max-width:560px; color:var(--tx2); font-size:1.02rem; line-height:1.55; }
+  .ref { position:relative; z-index:1; display:inline-block; margin-top:14px; padding:4px 10px; border-radius:10px; background:var(--card2);
+         color:var(--tx2); font:500 .8rem "Geist Mono", ui-monospace, monospace; }
+
+  /* cartões */
+  .grid { display:grid; grid-template-columns:1fr; gap:16px; }
+  @media (min-width:760px) { .grid { grid-template-columns:1fr 1fr; } }
+  .card {
+    background:var(--card); border:1px solid var(--line); border-radius:24px; padding:28px;
+    box-shadow:var(--shadow); display:flex; flex-direction:column;
+    transition:transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease;
+  }
+  .card:hover { transform:translateY(-2px); box-shadow:var(--shadow-h); }
+  .card-head { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .ico { width:40px; height:40px; border-radius:10px; background:var(--card2); color:var(--gold);
+         display:inline-flex; align-items:center; justify-content:center; font-size:1.35rem; }
+  h2 { margin:0; font-size:1.15rem; font-weight:600; letter-spacing:-.02em; }
+  .card p { margin:0 0 16px; color:var(--tx2); font-size:.95rem; line-height:1.55; }
+  .facts { list-style:none; margin:0 0 24px; padding:0; display:grid; gap:8px; flex:1; align-content:start; }
+  .facts li { display:flex; gap:10px; align-items:flex-start; color:var(--tx2); font-size:.9rem; line-height:1.45; }
+  .facts i { color:var(--tx3); margin-top:2px; }
+
+  /* botões: raio 10, alturas 36 e 32 */
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%;
+    height:36px; padding:0 16px; border-radius:10px; border:1px solid transparent;
+    font:500 .9rem/1 "Geist", sans-serif; cursor:pointer; transition:transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+  }
+  .btn:hover { transform:translateY(-1px); }
+  .btn.primary { color:#1B1407; background:linear-gradient(100deg, #8C6A22 0%, #DDB872 30%, #A67C2E 50%, #F1D9A0 70%, #A67C2E 100%);
+                 background-size:220% 100%; animation:sheen 7s ease-in-out infinite;
+                 box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 6px 16px rgba(166,124,46,.25); }
+  .btn.secondary { background:var(--card); color:var(--tx); border-color:var(--line-strong); }
+  .btn.ghost { height:32px; width:auto; background:transparent; color:var(--tx2); padding:0 10px; }
+  .btn:disabled { opacity:.55; cursor:not-allowed; transform:none; animation:none; }
+  .spin { animation:spin .9s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* estado (sem caixa/modal) */
+  .status { display:flex; gap:12px; align-items:flex-start; margin-top:16px; padding:14px 16px; border-radius:14px;
+            background:var(--card2); font-size:.93rem; line-height:1.5; }
+  .status[hidden] { display:none; }
+  .status i { font-size:1.2rem; margin-top:1px; }
+  .status.info i { color:var(--gold); }
+  .status.ok i { color:var(--green); }
+  .status.err i { color:var(--red); }
+  .status .grow { flex:1; }
+  .note { margin:20px 2px 0; color:var(--tx3); font-size:.85rem; line-height:1.5; }
+
+  footer { padding:20px 24px 28px; text-align:center; color:var(--tx3); font-size:.8rem; }
+  footer a { color:var(--tx2); text-decoration:none; margin:0 8px; }
+  footer a:hover { color:var(--tx); }
+  .empresa { display:block; margin-top:6px; }
+
+  /* entrada em cascata: só opacidade e movimento */
+  .rise { opacity:0; transform:translateY(14px); animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards; animation-delay:calc(var(--i, 0) * 90ms); }
+  @keyframes rise { to { opacity:1; transform:none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation:none !important; transition:none !important; }
+    .rise { opacity:1; transform:none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand gold-text" href="https://site.rkbcompany.solutions" aria-label="RKB Mídia">RKB</a>
+  <button class="icon-btn" id="theme" type="button" aria-label="Alternar claro e escuro"><i class="ph-fill ph-moon" id="theme-ico"></i></button>
+</header>
+
+<main>
+  <section class="hero rise" style="--i:0">
+    <svg class="silk" viewBox="0 0 880 150" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="silk-g" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" style="stop-color:var(--gold);stop-opacity:0"/>
+          <stop offset=".5" style="stop-color:var(--gold);stop-opacity:1"/>
+          <stop offset="1" style="stop-color:var(--gold);stop-opacity:0"/>
+        </linearGradient>
+      </defs>
+      <path d="M0,95 C150,15 270,150 430,72 S710,18 880,84" fill="none" stroke="url(#silk-g)" stroke-width="1.2"/>
+    </svg>
+    <h1 id="title">Conecte o WhatsApp da sua empresa.</h1>
+    <p class="sub">Escolha como o número vai funcionar. A conexão acontece na janela oficial da Meta e leva poucos minutos.</p>
+    <span class="ref" id="ref" hidden></span>
+  </section>
+
+  <section class="grid">
+    <article class="card rise" style="--i:1">
+      <div class="card-head">
+        <span class="ico"><i class="ph-fill ph-device-mobile"></i></span>
+        <h2>Coexistência</h2>
+      </div>
+      <p>Seu número continua no app WhatsApp Business do celular, e a plataforma atende junto com você.</p>
+      <ul class="facts">
+        <li><i class="ph-fill ph-check"></i><span>Você segue usando o app no celular</span></li>
+        <li><i class="ph-fill ph-phone-slash"></i><span>Ligações pela API não ficam disponíveis neste modo</span></li>
+      </ul>
+      <button class="btn primary" id="btn-coex" type="button">Conectar com coexistência</button>
+    </article>
+
+    <article class="card rise" style="--i:2">
+      <div class="card-head">
+        <span class="ico"><i class="ph-fill ph-plugs-connected"></i></span>
+        <h2>Número novo</h2>
+      </div>
+      <p>O número passa a funcionar somente pela API oficial, sem o app no celular.</p>
+      <ul class="facts">
+        <li><i class="ph-fill ph-check"></i><span>Indicado para quem vai usar ligações</span></li>
+        <li><i class="ph-fill ph-check"></i><span>Ideal para um número dedicado ao atendimento</span></li>
+      </ul>
+      <button class="btn secondary" id="btn-new" type="button">Conectar número novo</button>
+    </article>
+  </section>
+
+  <div class="status info" id="status" role="status" aria-live="polite" hidden>
+    <i class="ph-fill ph-circle-notch" id="status-ico"></i>
+    <span class="grow" id="status-txt"></span>
+    <button class="btn ghost" id="btn-reset" type="button" hidden>Conectar outro número</button>
+  </div>
+
+  <p class="note rise" style="--i:3">A senha do seu Facebook não passa pela RKB. Você entra direto na Meta e escolhe o que compartilhar.</p>
+</main>
+
+<footer>
+  <a href="https://site.rkbcompany.solutions/privacidade">Privacidade</a>
+  <a href="https://site.rkbcompany.solutions/termos">Termos</a>
+  <a href="https://site.rkbcompany.solutions/exclusao-de-dados">Exclusão de dados</a>
+  <span class="empresa" id="empresa"></span>
+</footer>
+
+<script>
+  // ====== AJUSTE AQUI ======
+  const APP_ID = '1712408040398746';
+  const CONFIG_ID = '1096464856625207';
+  const GRAPH_VERSION = 'v23.0'; // troque pela versão atual mostrada no painel do app
+  const N8N_WEBHOOK = 'https://n8n.rkbcompany.solutions/webhook/COLOQUE-O-CAMINHO-AQUI';
+  const EMPRESA_RODAPE = ''; // ex.: 'Razão Social Ltda · CNPJ 00.000.000/0001-00'
+  // =========================
+
+  const $ = function (id) { return document.getElementById(id); };
+  const params = new URLSearchParams(location.search);
+  const ref = params.get('ref') || params.get('cliente') || null;
+  const nome = params.get('nome') || null;
+
+  // saudação com o nome em ouro (se vier ?nome=)
+  if (nome) {
+    const h = $('title');
+    h.textContent = 'Olá, ';
+    const s = document.createElement('span');
+    s.className = 'gold-text';
+    s.textContent = nome;
+    h.appendChild(s);
+    h.appendChild(document.createTextNode('. Vamos conectar o seu WhatsApp.'));
+  }
+  if (ref) { const r = $('ref'); r.textContent = ref; r.hidden = false; }
+  if (EMPRESA_RODAPE) $('empresa').textContent = EMPRESA_RODAPE;
+
+  // tema claro / escuro
+  function setThemeIcon() {
+    $('theme-ico').className = 'ph-fill ' + (document.documentElement.getAttribute('data-theme') === 'dark' ? 'ph-sun' : 'ph-moon');
+  }
+  setThemeIcon();
+  $('theme').addEventListener('click', function () {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('rkb-theme', next); } catch (e) {}
+    setThemeIcon();
+  });
+
+  // estado da tela
+  const btnCoex = $('btn-coex'), btnNew = $('btn-new'), btnReset = $('btn-reset');
+  const statusEl = $('status'), statusIco = $('status-ico'), statusTxt = $('status-txt');
+  const label = { coex: btnCoex.textContent, nw: btnNew.textContent };
+
+  function show(kind, msg) {
+    statusEl.hidden = false;
+    statusEl.className = 'status ' + kind;
+    statusTxt.textContent = msg;
+    statusIco.className = 'ph-fill ' + (kind === 'ok' ? 'ph-check-circle' : kind === 'err' ? 'ph-warning-circle' : 'ph-circle-notch spin');
+    btnReset.hidden = (kind !== 'ok');
+  }
+  function lock(v, which) {
+    btnCoex.disabled = v; btnNew.disabled = v;
+    btnCoex.textContent = (v && which === 'coexistence') ? 'Abrindo a Meta...' : label.coex;
+    btnNew.textContent = (v && which === 'new') ? 'Abrindo a Meta...' : label.nw;
+  }
+
+  const state = { code: null, waba_id: null, phone_number_id: null, business_id: null, mode: null, sent: false, timer: null };
+
+  window.fbAsyncInit = function () {
+    FB.init({ appId: APP_ID, autoLogAppEvents: true, xfbml: true, version: GRAPH_VERSION });
+  };
+  (function (d, s, id) {
+    if (d.getElementById(id)) return;
+    const js = d.createElement(s); js.id = id; js.async = true; js.defer = true; js.crossOrigin = 'anonymous';
+    js.src = 'https://connect.facebook.net/pt_BR/sdk.js';
+    d.head.appendChild(js);
+  })(document, 'script', 'facebook-jssdk');
+
+  // eventos do Embedded Signup (waba_id e phone_number_id chegam por aqui)
+  window.addEventListener('message', function (event) {
+    if (!event.origin || !event.origin.endsWith('facebook.com')) return;
+    let data;
+    try { data = JSON.parse(event.data); } catch (e) { return; }
+    if (data.type !== 'WA_EMBEDDED_SIGNUP') return;
+
+    if (data.event === 'CANCEL') {
+      lock(false);
+      show('err', 'A conexão foi cancelada antes de terminar. Você pode tentar de novo.');
+      return;
+    }
+    if (data.data) {
+      state.waba_id = data.data.waba_id || state.waba_id;
+      state.phone_number_id = data.data.phone_number_id || state.phone_number_id;
+      state.business_id = data.data.business_id || state.business_id;
+    }
+    trySubmit();
+  });
+
+  function launch(mode) {
+    if (typeof FB === 'undefined') { show('err', 'A Meta ainda está carregando. Tente de novo em alguns segundos.'); return; }
+    clearTimeout(state.timer);
+    Object.assign(state, { code: null, waba_id: null, phone_number_id: null, business_id: null, mode: mode, sent: false });
+    lock(true, mode);
+    show('info', 'Siga as etapas na janela da Meta.');
+
+    const extras = { setup: {}, sessionInfoVersion: '3' };
+    if (mode === 'coexistence') extras.featureType = 'whatsapp_business_app_onboarding';
+
+    FB.login(function (response) {
+      if (response.authResponse && response.authResponse.code) {
+        state.code = response.authResponse.code;
+        // se os IDs não chegarem em 20s, avisa em vez de ficar parado
+        state.timer = setTimeout(function () {
+          if (!state.sent) { lock(false); show('err', 'Não recebemos a confirmação da Meta. Tente de novo.'); }
+        }, 20000);
+        trySubmit();
+      } else {
+        lock(false);
+        show('err', 'A conexão não foi concluída. Você pode tentar de novo.');
+      }
+    }, {
+      config_id: CONFIG_ID,
+      response_type: 'code',
+      override_default_response_type: true,
+      extras: extras
+    });
+  }
+
+  function trySubmit() {
+    // precisa do code (FB.login) e dos IDs (evento da Meta)
+    if (state.sent || !state.code || !state.waba_id) return;
+    state.sent = true;
+    clearTimeout(state.timer);
+    show('info', 'Finalizando a conexão...');
+
+    fetch(N8N_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: state.code,
+        waba_id: state.waba_id,
+        phone_number_id: state.phone_number_id,
+        business_id: state.business_id,
+        mode: state.mode,
+        ref: ref
+      })
+    })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); })
+    .then(function () { show('ok', 'WhatsApp conectado. Você já pode fechar esta página.'); lock(true); })
+    .catch(function () {
+      state.sent = false;
+      lock(false);
+      show('err', 'A Meta confirmou, mas houve um erro ao registrar a conexão. Fale com a RKB.');
+    });
+  }
+
+  btnCoex.addEventListener('click', function () { launch('coexistence'); });
+  btnNew.addEventListener('click', function () { launch('new'); });
+  btnReset.addEventListener('click', function () { lock(false); statusEl.hidden = true; });
+</script>
+</body>
+</html>
