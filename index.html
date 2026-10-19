@@ -208,14 +208,15 @@
   <span class="empresa" id="empresa"></span>
 </footer>
 
+<script src="/config.js"></script>
 <script>
-  // ====== AJUSTE AQUI ======
-  const APP_ID = '1712408040398746';
-  const CONFIG_ID = '1096464856625207';
-  const GRAPH_VERSION = 'v23.0'; // troque pela versão atual mostrada no painel do app
-  const N8N_WEBHOOK = 'https://n8n.rkbcompany.solutions/webhook/meta-conectar';
+  // valores vêm das variáveis do serviço no Easypanel (config.js é gerado ao subir o container)
+  const CFG = window.RKB_CONFIG || {};
+  const APP_ID = CFG.appId;
+  const CONFIG_ID = CFG.configId;
+  const GRAPH_VERSION = CFG.graphVersion;
+  const N8N_WEBHOOK = CFG.webhookUrl;
   const EMPRESA_RODAPE = '57.796.521 Kayque Costa Rocha · CNPJ 57.796.521/0001-14';
-  // =========================
 
   const $ = function (id) { return document.getElementById(id); };
   const params = new URLSearchParams(location.search);
@@ -265,13 +266,27 @@
     btnNew.textContent = (v && which === 'new') ? 'Abrindo a Meta...' : label.nw;
   }
 
-  const state = { code: null, waba_id: null, phone_number_id: null, business_id: null, mode: null, sent: false, timer: null };
+  const state = { code: null, waba_id: null, phone_number_id: null, business_id: null, mode: null, sent: false, failed: false, timer: null };
+
+  // sem configuração não abre a Meta (evita abrir o popup com dados errados)
+  const configOk = !!(APP_ID && CONFIG_ID && GRAPH_VERSION && N8N_WEBHOOK);
+  if (!configOk) {
+    lock(true);
+    show('err', 'A página está em manutenção. Fale com a RKB.');
+  }
+
+  function fail(msg) {
+    state.failed = true;
+    clearTimeout(state.timer);
+    lock(false);
+    show('err', msg);
+  }
 
   window.fbAsyncInit = function () {
     FB.init({ appId: APP_ID, autoLogAppEvents: true, xfbml: true, version: GRAPH_VERSION });
   };
   (function (d, s, id) {
-    if (d.getElementById(id)) return;
+    if (!configOk || d.getElementById(id)) return;
     const js = d.createElement(s); js.id = id; js.async = true; js.defer = true; js.crossOrigin = 'anonymous';
     js.src = 'https://connect.facebook.net/pt_BR/sdk.js';
     d.head.appendChild(js);
@@ -282,42 +297,54 @@
     if (!event.origin || !event.origin.endsWith('facebook.com')) return;
     let data;
     try { data = JSON.parse(event.data); } catch (e) { return; }
-    if (data.type !== 'WA_EMBEDDED_SIGNUP') return;
+    if (data.type !== 'WA_EMBEDDED_SIGNUP' || state.sent || state.failed) return;
+    const info = data.data || {};
 
-    if (data.event === 'CANCEL') {
-      lock(false);
-      show('err', 'A conexão foi cancelada antes de terminar. Você pode tentar de novo.');
+    // erro relatado na janela da Meta (vem como ERROR ou como CANCEL com error_message)
+    if (data.event === 'ERROR' || info.error_message) {
+      fail('A Meta não conseguiu concluir a conexão. Tente de novo; se o erro continuar, fale com a RKB.');
       return;
     }
-    if (data.data) {
-      state.waba_id = data.data.waba_id || state.waba_id;
-      state.phone_number_id = data.data.phone_number_id || state.phone_number_id;
-      state.business_id = data.data.business_id || state.business_id;
+    if (data.event === 'CANCEL') {
+      fail('A conexão foi cancelada antes de terminar. Você pode tentar de novo.');
+      return;
+    }
+    // FINISH (número novo), FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING (coexistência), FINISH_ONLY_WABA etc.
+    if (String(data.event || '').indexOf('FINISH') !== 0) return;
+    state.waba_id = info.waba_id || null;
+    state.phone_number_id = info.phone_number_id || null;
+    state.business_id = info.business_id || null;
+    if (!state.waba_id || !state.phone_number_id) {
+      fail('A conexão terminou sem um número de WhatsApp escolhido. Tente de novo e selecione o número.');
+      return;
     }
     trySubmit();
   });
 
   function launch(mode) {
+    if (!configOk) return;
     if (typeof FB === 'undefined') { show('err', 'A Meta ainda está carregando. Tente de novo em alguns segundos.'); return; }
     clearTimeout(state.timer);
-    Object.assign(state, { code: null, waba_id: null, phone_number_id: null, business_id: null, mode: mode, sent: false });
+    Object.assign(state, { code: null, waba_id: null, phone_number_id: null, business_id: null, mode: mode, sent: false, failed: false });
     lock(true, mode);
     show('info', 'Siga as etapas na janela da Meta.');
 
-    const extras = { setup: {}, sessionInfoVersion: '3' };
+    // Embedded Signup v4: a versão vem da configuração (config_id), sem sessionInfoVersion.
+    // Coexistência continua sendo pedida pelo featureType.
+    const extras = { setup: {} };
     if (mode === 'coexistence') extras.featureType = 'whatsapp_business_app_onboarding';
 
     FB.login(function (response) {
+      if (state.failed) return;
       if (response.authResponse && response.authResponse.code) {
         state.code = response.authResponse.code;
-        // se os IDs não chegarem em 20s, avisa em vez de ficar parado
+        // se os IDs não chegarem em 20s, avisa em vez de ficar parado (e não salva nada)
         state.timer = setTimeout(function () {
-          if (!state.sent) { lock(false); show('err', 'Não recebemos a confirmação da Meta. Tente de novo.'); }
+          if (!state.sent) fail('Não recebemos a confirmação da Meta. Tente de novo.');
         }, 20000);
         trySubmit();
       } else {
-        lock(false);
-        show('err', 'A conexão não foi concluída. Você pode tentar de novo.');
+        fail('A conexão não foi concluída. Você pode tentar de novo.');
       }
     }, {
       config_id: CONFIG_ID,
@@ -328,8 +355,8 @@
   }
 
   function trySubmit() {
-    // precisa do code (FB.login) e dos IDs (evento da Meta)
-    if (state.sent || !state.code || !state.waba_id) return;
+    // precisa do code (FB.login) e dos dois IDs (evento da Meta); sem eles nada é enviado
+    if (state.sent || state.failed || !state.code || !state.waba_id || !state.phone_number_id) return;
     state.sent = true;
     clearTimeout(state.timer);
     show('info', 'Finalizando a conexão...');
