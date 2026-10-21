@@ -21,7 +21,7 @@ Só valores públicos. App Secret e tokens ficam nas credenciais do n8n.
 | Variável | Valor |
 |---|---|
 | `META_APP_ID` | `1712408040398746` |
-| `META_CONFIG_ID` | `1799645611084228` |
+| `META_CONFIG_ID` | `1138839448657068` (desde 21/10, token do cliente sem vencimento; antes `1799645611084228`) |
 | `META_GRAPH_VERSION` | `v26.0` (padrão se vazio) |
 | `ONBOARDING_WEBHOOK_URL` | `https://n8n.rkbcompany.solutions/webhook/meta-conectar` |
 
