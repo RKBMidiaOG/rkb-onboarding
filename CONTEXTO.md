@@ -40,3 +40,10 @@ Se faltar alguma, a página abre em "manutenção" e não chama a Meta. O `confi
 - Supabase: guardar data de vencimento do token do cliente; aviso antes de vencer (se o token do cliente for necessário depois).
 - Confirmar na documentação o modelo de operação como Tech Provider (token permanente do usuário do sistema da RKB × token do cliente).
 - Testar só com o portfólio da RKB Mídia. Nunca com cliente em produção (alguns estão na HookCloud).
+
+## 26/10 — Página do cliente com convite e motor do CRM
+- A página deixou de usar o n8n `meta-conectar` (problemas antigos). Agora chama o **motor do CRM**: `https://crm.rkbcompany.solutions/api/publico` (`/config`, `/convite`, `/conectar`) — mesma troca de código, subscribed_apps, register/smb_app_data, cofre e pingo no webhook.
+- Variável única: `ONBOARDING_API_URL` (padrão acima). App, config_id (`1138839448657068`) e versão vêm do motor.
+- **Com convite** (`?c=...`, gerado no CRM em Números → Gerar convite; 7 dias, uso único): "Olá, <empresa>", link de ativação preenchido e travado, tipo travado se a RKB escolheu.
+- **Sem convite**: modo manual, link de ativação editável (clientes com equipe técnica).
+- Textos para leigo ("link de ativação", sem jargão); erros em português claro. O segredo de assinatura não aparece para o cliente.

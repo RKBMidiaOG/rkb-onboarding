@@ -139,6 +139,22 @@
     *, *::before, *::after { animation:none !important; transition:none !important; }
     .rise { opacity:1; transform:none; }
   }
+
+  /* formulário de ativação (21/10): convite com link travado ou modo manual */
+  .form-card { display:grid; gap:18px; }
+  .field { display:grid; gap:6px; }
+  .field label { font-size:.9rem; color:var(--tx2); }
+  .field input { height:46px; padding:0 14px; border-radius:12px; border:1px solid var(--line, rgba(127,127,127,.25)); background:var(--card2); color:var(--tx); font:inherit; }
+  .field input[readonly] { opacity:.8; cursor:not-allowed; }
+  .field small { color:var(--tx3); font-size:.82rem; line-height:1.45; }
+  .modes { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .mode { text-align:left; padding:14px 16px; border-radius:14px; border:1px solid var(--line, rgba(127,127,127,.25)); background:var(--card2); color:var(--tx); cursor:pointer; display:grid; gap:4px; }
+  .mode b { font-weight:600; }
+  .mode span { font-size:.85rem; color:var(--tx2); line-height:1.4; }
+  .mode.on { border-color:var(--gold); box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent); }
+  .mode[disabled] { cursor:default; }
+  .hint { padding:14px 16px; border-radius:14px; background:var(--card2); color:var(--tx2); font-size:.9rem; line-height:1.5; }
+  @media (max-width:640px) { .modes { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -159,46 +175,42 @@
       </defs>
       <path d="M0,95 C150,15 270,150 430,72 S710,18 880,84" fill="none" stroke="url(#silk-g)" stroke-width="1.2"/>
     </svg>
-    <h1 id="title">Conecte o WhatsApp da sua empresa.</h1>
-    <p class="sub">Escolha como o número vai funcionar. A conexão acontece na janela oficial da Meta e leva poucos minutos.</p>
-    <span class="ref" id="ref" hidden></span>
+    <h1 id="title">Ative o WhatsApp da sua empresa.</h1>
+    <p class="sub">Você vai conectar o seu WhatsApp e autorizar a RKB a enviar mensagens por ele. Leva poucos minutos, numa janela oficial da Meta.</p>
   </section>
 
-  <section class="grid">
-    <article class="card rise" style="--i:1">
-      <div class="card-head">
-        <span class="ico"><i class="ph-fill ph-device-mobile"></i></span>
-        <h2>Coexistência</h2>
-      </div>
-      <p>Seu número continua no app WhatsApp Business do celular, e a plataforma atende junto com você.</p>
-      <ul class="facts">
-        <li><i class="ph-fill ph-check"></i><span>Você segue usando o app no celular</span></li>
-        <li><i class="ph-fill ph-phone-slash"></i><span>Ligações pela API não ficam disponíveis neste modo</span></li>
-      </ul>
-      <button class="btn primary" id="btn-coex" type="button">Conectar com coexistência</button>
-    </article>
+  <section class="card form-card rise" style="--i:1" id="form">
+    <div class="field">
+      <label for="link">Link de ativação</label>
+      <input id="link" type="url" placeholder="https://..." spellcheck="false" inputmode="url">
+      <small id="link-ajuda">Cole aqui o link que a sua equipe técnica passou.</small>
+    </div>
 
-    <article class="card rise" style="--i:2">
-      <div class="card-head">
-        <span class="ico"><i class="ph-fill ph-plugs-connected"></i></span>
-        <h2>Número novo</h2>
+    <div class="field">
+      <label>Como o seu WhatsApp vai funcionar?</label>
+      <div class="modes" role="radiogroup">
+        <button class="mode on" type="button" role="radio" aria-checked="true" data-modo="coexistence">
+          <b>Continuar usando o app no celular</b>
+          <span>Para um número que já está no WhatsApp Business. Você segue atendendo pelo celular.</span>
+        </button>
+        <button class="mode" type="button" role="radio" aria-checked="false" data-modo="new">
+          <b>Número só para a plataforma</b>
+          <span>Para um número que não está em nenhum WhatsApp. Ele passa a funcionar só pela plataforma.</span>
+        </button>
       </div>
-      <p>O número passa a funcionar somente pela API oficial, sem o app no celular.</p>
-      <ul class="facts">
-        <li><i class="ph-fill ph-check"></i><span>Indicado para quem vai usar ligações</span></li>
-        <li><i class="ph-fill ph-check"></i><span>Ideal para um número dedicado ao atendimento</span></li>
-      </ul>
-      <button class="btn secondary" id="btn-new" type="button">Conectar número novo</button>
-    </article>
+    </div>
+
+    <div class="hint" id="dica"></div>
+
+    <button class="btn primary" id="ativar" type="button">Ativar</button>
   </section>
 
   <div class="status info" id="status" role="status" aria-live="polite" hidden>
     <i class="ph-fill ph-circle-notch" id="status-ico"></i>
     <span class="grow" id="status-txt"></span>
-    <button class="btn ghost" id="btn-reset" type="button" hidden>Conectar outro número</button>
   </div>
 
-  <p class="note rise" style="--i:3">A senha do seu Facebook não passa pela RKB. Você entra direto na Meta e escolhe o que compartilhar.</p>
+  <p class="note rise" style="--i:2">A senha do seu Facebook não passa pela RKB. Você entra direto na Meta e escolhe o que compartilhar.</p>
 </main>
 
 <footer>
@@ -210,31 +222,17 @@
 
 <script src="/config.js"></script>
 <script>
-  // valores vêm das variáveis do serviço no Easypanel (config.js é gerado ao subir o container)
-  const CFG = window.RKB_CONFIG || {};
-  const APP_ID = CFG.appId;
-  const CONFIG_ID = CFG.configId;
-  const GRAPH_VERSION = CFG.graphVersion;
-  const N8N_WEBHOOK = CFG.webhookUrl;
+  // Endereço do motor de conexão (o mesmo do CRM), vindo das variáveis do serviço.
+  const API = (window.RKB_CONFIG || {}).apiUrl;
   const EMPRESA_RODAPE = '57.796.521 Kayque Costa Rocha · CNPJ 57.796.521/0001-14';
 
   const $ = function (id) { return document.getElementById(id); };
-  const params = new URLSearchParams(location.search);
-  const ref = params.get('ref') || params.get('cliente') || null;
-  const nome = params.get('nome') || null;
-
-  // saudação com o nome em ouro (se vier ?nome=)
-  if (nome) {
-    const h = $('title');
-    h.textContent = 'Olá, ';
-    const s = document.createElement('span');
-    s.className = 'gold-text';
-    s.textContent = nome;
-    h.appendChild(s);
-    h.appendChild(document.createTextNode('. Vamos conectar o seu WhatsApp.'));
-  }
-  if (ref) { const r = $('ref'); r.textContent = ref; r.hidden = false; }
-  if (EMPRESA_RODAPE) $('empresa').textContent = EMPRESA_RODAPE;
+  $('empresa').textContent = EMPRESA_RODAPE;
+  const convite = new URLSearchParams(location.search).get('c');
+  const DICAS = {
+    coexistence: 'Tenha por perto o celular com o WhatsApp Business deste número. A Meta vai mostrar um código QR para você ler com ele.',
+    new: 'Use um número que não esteja no WhatsApp (nem no comum, nem no Business). A Meta vai confirmar o número por SMS ou ligação.'
+  };
 
   // tema claro / escuro
   function setThemeIcon() {
@@ -248,143 +246,133 @@
     setThemeIcon();
   });
 
-  // estado da tela
-  const btnCoex = $('btn-coex'), btnNew = $('btn-new'), btnReset = $('btn-reset');
-  const statusEl = $('status'), statusIco = $('status-ico'), statusTxt = $('status-txt');
-  const label = { coex: btnCoex.textContent, nw: btnNew.textContent };
-
+  const statusEl = $('status'), statusIco = $('status-ico'), statusTxt = $('status-txt'), btn = $('ativar');
   function show(kind, msg) {
     statusEl.hidden = false;
     statusEl.className = 'status ' + kind;
     statusTxt.textContent = msg;
     statusIco.className = 'ph-fill ' + (kind === 'ok' ? 'ph-check-circle' : kind === 'err' ? 'ph-warning-circle' : 'ph-circle-notch spin');
-    btnReset.hidden = (kind !== 'ok');
   }
-  function lock(v, which) {
-    btnCoex.disabled = v; btnNew.disabled = v;
-    btnCoex.textContent = (v && which === 'coexistence') ? 'Abrindo a Meta...' : label.coex;
-    btnNew.textContent = (v && which === 'new') ? 'Abrindo a Meta...' : label.nw;
+  function travar(v, texto) { btn.disabled = v; btn.textContent = texto || 'Ativar'; }
+
+  let modo = 'coexistence', modoFixo = false, cfg = null;
+  function escolherModo(m) {
+    modo = m;
+    document.querySelectorAll('.mode').forEach(function (b) {
+      const on = b.dataset.modo === m;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+      b.hidden = modoFixo && !on;
+    });
+    $('dica').textContent = DICAS[m];
+  }
+  document.querySelectorAll('.mode').forEach(function (b) {
+    b.addEventListener('click', function () { if (!modoFixo) escolherModo(b.dataset.modo); });
+  });
+  escolherModo('coexistence');
+
+  function pedir(caminho, corpo) {
+    return fetch(API + caminho, corpo ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) } : {})
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) throw new Error(d.erro || 'Algo deu errado. Tente de novo.'); return d; }); });
   }
 
-  const state = { code: null, waba_id: null, phone_number_id: null, business_id: null, mode: null, sent: false, failed: false, timer: null };
+  // Convite: nome da empresa, link travado e (se a RKB escolheu) o tipo travado.
+  function prepararConvite() {
+    if (!convite) return Promise.resolve();
+    travar(true, 'Carregando…');
+    return pedir('/convite?c=' + encodeURIComponent(convite)).then(function (d) {
+      const h = $('title');
+      h.textContent = 'Olá, ';
+      const s = document.createElement('span'); s.className = 'gold-text'; s.textContent = d.empresa;
+      h.appendChild(s); h.appendChild(document.createTextNode('. Vamos ativar o seu WhatsApp.'));
+      $('link').value = d.link; $('link').readOnly = true;
+      $('link-ajuda').textContent = 'Já preenchido pela RKB. Você não precisa mexer.';
+      if (d.modo) { modoFixo = true; escolherModo(d.modo); }
+      travar(false);
+    }).catch(function (e) {
+      $('form').hidden = true;
+      show('err', e.message);
+      throw e;
+    });
+  }
 
-  // sem configuração não abre a Meta (evita abrir o popup com dados errados)
-  const configOk = !!(APP_ID && CONFIG_ID && GRAPH_VERSION && N8N_WEBHOOK);
-  if (!configOk) {
-    lock(true);
+  // SDK da Meta: carregado já na abertura, porque o clique precisa abrir a janela na hora.
+  function carregarMeta() {
+    return pedir('/config').then(function (c) {
+      cfg = c;
+      return new Promise(function (resolve) {
+        window.fbAsyncInit = function () { FB.init({ appId: c.appId, autoLogAppEvents: true, xfbml: false, version: c.versao }); resolve(); };
+        const js = document.createElement('script');
+        js.async = true; js.defer = true; js.crossOrigin = 'anonymous';
+        js.src = 'https://connect.facebook.net/pt_BR/sdk.js';
+        document.head.appendChild(js);
+      });
+    });
+  }
+
+  if (!API) {
+    travar(true);
     show('err', 'A página está em manutenção. Fale com a RKB.');
+  } else {
+    Promise.all([carregarMeta(), prepararConvite()]).catch(function (e) {
+      if (!convite) show('err', 'Não foi possível carregar a janela da Meta. Recarregue a página.');
+    });
   }
 
-  function fail(msg) {
-    state.failed = true;
-    clearTimeout(state.timer);
-    lock(false);
-    show('err', msg);
-  }
+  const estado = { code: null, waba_id: null, phone_number_id: null, business_id: null, enviado: false, falhou: false, relogio: null };
+  function falhar(msg) { estado.falhou = true; clearTimeout(estado.relogio); travar(false); show('err', msg); }
 
-  window.fbAsyncInit = function () {
-    FB.init({ appId: APP_ID, autoLogAppEvents: true, xfbml: true, version: GRAPH_VERSION });
-  };
-  (function (d, s, id) {
-    if (!configOk || d.getElementById(id)) return;
-    const js = d.createElement(s); js.id = id; js.async = true; js.defer = true; js.crossOrigin = 'anonymous';
-    js.src = 'https://connect.facebook.net/pt_BR/sdk.js';
-    d.head.appendChild(js);
-  })(document, 'script', 'facebook-jssdk');
-
-  // eventos do Embedded Signup (waba_id e phone_number_id chegam por aqui)
   window.addEventListener('message', function (event) {
     if (!event.origin || !event.origin.endsWith('facebook.com')) return;
-    let data;
-    try { data = JSON.parse(event.data); } catch (e) { return; }
-    if (data.type !== 'WA_EMBEDDED_SIGNUP' || state.sent || state.failed) return;
+    let data; try { data = JSON.parse(event.data); } catch (e) { return; }
+    if (data.type !== 'WA_EMBEDDED_SIGNUP' || estado.enviado || estado.falhou) return;
     const info = data.data || {};
-
-    // erro relatado na janela da Meta (vem como ERROR ou como CANCEL com error_message)
-    if (data.event === 'ERROR' || info.error_message) {
-      fail('A Meta não conseguiu concluir a conexão. Tente de novo; se o erro continuar, fale com a RKB.');
-      return;
-    }
-    if (data.event === 'CANCEL') {
-      fail('A conexão foi cancelada antes de terminar. Você pode tentar de novo.');
-      return;
-    }
-    // FINISH (número novo), FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING (coexistência), FINISH_ONLY_WABA etc.
+    if (data.event === 'ERROR' || info.error_message) return falhar('A Meta não conseguiu concluir. Tente de novo; se continuar, fale com a RKB.');
+    if (data.event === 'CANCEL') return falhar('Você fechou a janela da Meta antes de terminar. É só clicar em Ativar de novo.');
     if (String(data.event || '').indexOf('FINISH') !== 0) return;
-    state.waba_id = info.waba_id || null;
-    state.phone_number_id = info.phone_number_id || null;
-    state.business_id = info.business_id || null;
-    if (!state.waba_id || !state.phone_number_id) {
-      fail('A conexão terminou sem um número de WhatsApp escolhido. Tente de novo e selecione o número.');
-      return;
-    }
-    trySubmit();
+    estado.waba_id = info.waba_id || null; estado.phone_number_id = info.phone_number_id || null; estado.business_id = info.business_id || null;
+    if (!estado.waba_id || !estado.phone_number_id) return falhar('A conexão terminou sem um número escolhido. Clique em Ativar e escolha o número na janela da Meta.');
+    finalizar();
   });
 
-  function launch(mode) {
-    if (!configOk) return;
-    if (typeof FB === 'undefined') { show('err', 'A Meta ainda está carregando. Tente de novo em alguns segundos.'); return; }
-    clearTimeout(state.timer);
-    Object.assign(state, { code: null, waba_id: null, phone_number_id: null, business_id: null, mode: mode, sent: false, failed: false });
-    lock(true, mode);
+  btn.addEventListener('click', function () {
+    const link = $('link').value.trim();
+    if (!convite && !/^https:\/\//.test(link)) { show('err', 'Cole o link de ativação que a sua equipe passou (começa com https://).'); return; }
+    if (typeof FB === 'undefined' || !cfg) { show('err', 'A janela da Meta ainda está carregando. Tente de novo em alguns segundos.'); return; }
+    Object.assign(estado, { code: null, waba_id: null, phone_number_id: null, business_id: null, enviado: false, falhou: false });
+    travar(true, 'Siga na janela da Meta…');
     show('info', 'Siga as etapas na janela da Meta.');
-
-    // Embedded Signup v4: a versão vem da configuração (config_id), sem sessionInfoVersion.
-    // Coexistência continua sendo pedida pelo featureType.
-    const extras = { setup: {} };
-    if (mode === 'coexistence') extras.featureType = 'whatsapp_business_app_onboarding';
-
-    FB.login(function (response) {
-      if (state.failed) return;
-      if (response.authResponse && response.authResponse.code) {
-        state.code = response.authResponse.code;
-        // se os IDs não chegarem em 20s, avisa em vez de ficar parado (e não salva nada)
-        state.timer = setTimeout(function () {
-          if (!state.sent) fail('Não recebemos a confirmação da Meta. Tente de novo.');
-        }, 20000);
-        trySubmit();
-      } else {
-        fail('A conexão não foi concluída. Você pode tentar de novo.');
-      }
+    FB.login(function (r) {
+      if (estado.falhou) return;
+      if (!r.authResponse || !r.authResponse.code) return falhar('A ativação não foi concluída. Você pode tentar de novo.');
+      estado.code = r.authResponse.code;
+      estado.relogio = setTimeout(function () { if (!estado.enviado) falhar('Não recebemos a confirmação da Meta. Tente de novo.'); }, 20000);
+      finalizar();
     }, {
-      config_id: CONFIG_ID,
+      config_id: cfg.configId,
       response_type: 'code',
       override_default_response_type: true,
-      extras: extras
+      extras: modo === 'coexistence' ? { setup: {}, featureType: 'whatsapp_business_app_onboarding' } : { setup: {} }
+    });
+  });
+
+  function finalizar() {
+    if (estado.enviado || estado.falhou || !estado.code || !estado.waba_id || !estado.phone_number_id) return;
+    estado.enviado = true;
+    clearTimeout(estado.relogio);
+    show('info', 'Finalizando a ativação…');
+    pedir('/conectar', {
+      code: estado.code, waba_id: estado.waba_id, phone_number_id: estado.phone_number_id,
+      business_id: estado.business_id || undefined, modo: modo,
+      convite: convite || undefined, url: convite ? undefined : $('link').value.trim()
+    }).then(function (d) {
+      $('form').hidden = true;
+      show('ok', 'Pronto! Seu WhatsApp está conectado à RKB.' + (d.avisos && d.avisos.length ? ' ' + d.avisos.join(' ') : '') + ' Você já pode fechar esta página.');
+    }).catch(function (e) {
+      estado.enviado = false;
+      falhar(e.message);
     });
   }
-
-  function trySubmit() {
-    // precisa do code (FB.login) e dos dois IDs (evento da Meta); sem eles nada é enviado
-    if (state.sent || state.failed || !state.code || !state.waba_id || !state.phone_number_id) return;
-    state.sent = true;
-    clearTimeout(state.timer);
-    show('info', 'Finalizando a conexão...');
-
-    fetch(N8N_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code: state.code,
-        waba_id: state.waba_id,
-        phone_number_id: state.phone_number_id,
-        business_id: state.business_id,
-        mode: state.mode,
-        ref: ref
-      })
-    })
-    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); })
-    .then(function () { show('ok', 'WhatsApp conectado. Você já pode fechar esta página.'); lock(true); })
-    .catch(function () {
-      state.sent = false;
-      lock(false);
-      show('err', 'A Meta confirmou, mas houve um erro ao registrar a conexão. Fale com a RKB.');
-    });
-  }
-
-  btnCoex.addEventListener('click', function () { launch('coexistence'); });
-  btnNew.addEventListener('click', function () { launch('new'); });
-  btnReset.addEventListener('click', function () { lock(false); statusEl.hidden = true; });
 </script>
 </body>
 </html>
